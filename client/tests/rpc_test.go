@@ -1,9 +1,13 @@
 package tests
 
 import (
+	"fmt"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // Make sure status is correct (we connect properly)
@@ -13,6 +17,30 @@ func TestStatus(t *testing.T) {
 	if assert.Nil(t, err) {
 		assert.Equal(t, GetConfig().GetString("chain_id"), status.NodeInfo.Network)
 	}
+}
+
+// Make some app checks
+func TestAppCalls(t *testing.T) {
+	assert, require := assert.New(t), require.New(t)
+	c := GetClient()
+	_, err := c.Block(1)
+	assert.NotNil(err) // no block yet
+	k, v, tx := TestTxKV()
+	_, err = c.BroadcastTxCommit(tx)
+	require.Nil(err)
+	// wait before querying
+	time.Sleep(time.Second)
+	qres, err := c.TMSPQuery(k)
+	if assert.Nil(err) {
+		// make sure dummy app return value...
+		r := strings.Split(string(qres.Result.Data), " ")
+		assert.Equal(3, len(r))
+		assert.Equal(fmt.Sprintf("value=%s", v), r[1])
+		assert.Equal("exists=true", r[2])
+	}
+	// and we can even check the block is added
+	_, err = c.Block(1)
+	assert.Nil(err) // now it's good :)
 }
 
 // run most calls just to make sure no syntax errors
