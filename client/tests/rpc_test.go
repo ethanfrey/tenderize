@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tendermint/tendermint/types"
 )
 
 // Make sure status is correct (we connect properly)
@@ -61,4 +62,45 @@ func TestNoErrors(t *testing.T) {
 	if assert.Nil(err) {
 		assert.Equal(GetConfig().GetString("chain_id"), gen.Genesis.ChainID)
 	}
+}
+
+func TestSubscriptions(t *testing.T) {
+	assert, require := assert.New(t), require.New(t)
+	c := GetClient()
+	err := c.StartWebsocket()
+	require.Nil(err)
+	defer c.StopWebsocket()
+
+	// subscribe to a transaction event
+	_, _, tx := TestTxKV()
+	eventType := types.EventStringTx(types.Tx(tx))
+	fmt.Println(eventType)
+	c.Subscribe(eventType)
+	read := 0
+
+	// set up a listener
+	r, e := c.GetEventChannels()
+	go func() {
+		// read one event in the background
+		select {
+		case <-r:
+			// TODO: actually parse this or something
+			read += 1
+		case err := <-e:
+			panic(err)
+		}
+	}()
+
+	// make sure nothing has happened yet.
+	time.Sleep(20 * time.Millisecond)
+	assert.Equal(0, read)
+
+	// send a tx and wait for it to propogate
+	_, err = c.BroadcastTxCommit(tx)
+	require.Nil(err)
+	// wait before querying
+	time.Sleep(time.Second)
+
+	// now make sure the event arrived
+	assert.Equal(1, read)
 }

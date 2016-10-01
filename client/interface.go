@@ -23,7 +23,9 @@ type Client interface {
 	TMSPQuery(query []byte) (*ctypes.ResultTMSPQuery, error)
 	TMSPInfo() (*ctypes.ResultTMSPInfo, error)
 
-	// TODO: subscribe to events
+	// subscribe to events (how to read them depends on implementation...)
+	Subscribe(event string) error
+	Unsubscribe(event string) error
 
 	// are these needed by clients??
 	// DumpConsensusState() (*ctypes.ResultDumpConsensusState, error)

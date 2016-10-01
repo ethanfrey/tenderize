@@ -1,6 +1,8 @@
 package client
 
 import (
+	"encoding/json"
+
 	"github.com/tendermint/go-rpc/client"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	"github.com/tendermint/tendermint/types"
@@ -8,12 +10,17 @@ import (
 )
 
 type LightClient struct {
-	rpc *rpcclient.ClientJSONRPC
+	remote   string
+	endpoint string
+	rpc      *rpcclient.ClientJSONRPC
+	ws       *rpcclient.WSClient
 }
 
-func New(remote string) *LightClient {
+func New(remote, wsEndpoint string) *LightClient {
 	return &LightClient{
-		rpc: rpcclient.NewClientJSONRPC(remote),
+		rpc:      rpcclient.NewClientJSONRPC(remote),
+		remote:   remote,
+		endpoint: wsEndpoint,
 	}
 }
 
@@ -119,4 +126,44 @@ func (c *LightClient) Validators() (*ctypes.ResultValidators, error) {
 		return nil, err
 	}
 	return (*tmResult).(*ctypes.ResultValidators), nil
+}
+
+/** websocket event stuff here... **/
+
+// StartWebsocket starts up a websocket and a listener goroutine
+// if already started, do nothing
+func (c *LightClient) StartWebsocket() error {
+	var err error
+	if c.ws == nil {
+		ws := rpcclient.NewWSClient(c.remote, c.endpoint)
+		err = ws.OnStart()
+		if err == nil {
+			c.ws = ws
+		}
+	}
+	return err
+}
+
+// StopWebsocket stops the websocket connection
+func (c *LightClient) StopWebsocket() {
+	if c.ws != nil {
+		c.ws.OnStop()
+		c.ws = nil
+	}
+}
+
+// GetEventChannels returns the results and error channel from the websocket
+func (c *LightClient) GetEventChannels() (chan json.RawMessage, chan error) {
+	if c.ws == nil {
+		return nil, nil
+	}
+	return c.ws.ResultsCh, c.ws.ErrorsCh
+}
+
+func (c *LightClient) Subscribe(event string) error {
+	return c.ws.Subscribe(event)
+}
+
+func (c *LightClient) Unsubscribe(event string) error {
+	return c.ws.Unsubscribe(event)
 }
