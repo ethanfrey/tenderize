@@ -136,7 +136,7 @@ func (c *LightClient) StartWebsocket() error {
 	var err error
 	if c.ws == nil {
 		ws := rpcclient.NewWSClient(c.remote, c.endpoint)
-		err = ws.OnStart()
+		_, err = ws.Start()
 		if err == nil {
 			c.ws = ws
 		}
@@ -147,7 +147,7 @@ func (c *LightClient) StartWebsocket() error {
 // StopWebsocket stops the websocket connection
 func (c *LightClient) StopWebsocket() {
 	if c.ws != nil {
-		c.ws.OnStop()
+		c.ws.Stop()
 		c.ws = nil
 	}
 }
