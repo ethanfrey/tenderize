@@ -1,0 +1,4 @@
+package: github.com/ethanfrey/tenderize
+import:
+- package: github.com/tendermint/go-merkle
+  repo: https://github.com/ethanfrey/go-merkle.git
