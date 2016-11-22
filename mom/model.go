@@ -18,7 +18,7 @@ type Model interface {
 	Deserialize([]byte) error
 }
 
-// MWire is designed to work with go-wire
+// MWire is designed to bridge Models for go-wire
 type MWire struct {
 	Model
 }

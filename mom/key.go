@@ -17,6 +17,11 @@ type Key interface {
 	Model() Model
 }
 
+// MKey is designed to bridge Keys for go-wire
+type MKey struct {
+	Key
+}
+
 // Query can define a detailed range query based on a key
 type Query struct {
 	Key     Key

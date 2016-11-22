@@ -15,8 +15,13 @@ func init() {
 	maxAccountID = bytes.Repeat([]byte{255}, accountIDLength)
 	wire.RegisterInterface(
 		MWire{},
-		wire.ConcreteType{O: &Account{}, Byte: 2},
-		wire.ConcreteType{O: &Status{}, Byte: 4},
+		wire.ConcreteType{O: &Account{}, Byte: 1},
+		wire.ConcreteType{O: &Status{}, Byte: 2},
+	)
+	wire.RegisterInterface(
+		MKey{},
+		wire.ConcreteType{O: AccountKey{}, Byte: 1},
+		wire.ConcreteType{O: StatusKey{}, Byte: 2},
 	)
 }
 
@@ -58,7 +63,7 @@ type AccountKey struct {
 }
 
 func (k AccountKey) Serialize() ([]byte, error) {
-	return wutil.ToBinary(k)
+	return wutil.ToBinary(MKey{k})
 }
 
 func (k AccountKey) Range() (min Key, max Key) {
@@ -74,7 +79,7 @@ func (k AccountKey) Model() Model {
 
 // Status is the sample contained model (immutable - append only list)
 type Status struct {
-	Account AccountKey
+	Account Key
 	Index   int32
 	Message string
 }
@@ -95,19 +100,17 @@ func (s *Status) Deserialize(data []byte) error {
 }
 
 type StatusKey struct {
-	Account AccountKey
+	Account Key
 	Index   int32
 }
 
 func (k StatusKey) Serialize() ([]byte, error) {
-	return wutil.ToBinary(k)
+	return wutil.ToBinary(MKey{k})
 }
 
 func (k StatusKey) Range() (Key, Key) {
-	a1, a2 := k.Account.Range()
-
 	min, max := k, k
-	min.Account, max.Account = a1.(AccountKey), a2.(AccountKey)
+	min.Account, max.Account = k.Account.Range()
 
 	if k.Index == 0 {
 		min.Index = 1
@@ -117,5 +120,5 @@ func (k StatusKey) Range() (Key, Key) {
 }
 
 func (k StatusKey) Model() Model {
-	return new(Account)
+	return new(Status)
 }
