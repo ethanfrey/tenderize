@@ -1,5 +1,5 @@
-hash: 8deeba9fdb316c89ff537df7bf3e0f6835f5d5d0153a2c34016232af4681d43a
-updated: 2016-11-21T17:51:23.010771466+01:00
+hash: 35363e9b3847d0bea6bbf3ca402b7ef9ceda546d541d84ece6b12cf42411469d
+updated: 2016-11-22T17:39:49.775142856+01:00
 imports:
 - name: github.com/btcsuite/btcd
   version: 83432785f3df1f0b6f8e6926dfe0987a34ea5b3c
@@ -25,6 +25,11 @@ imports:
   version: 66b8e73f3f5cda9f96b69efd03dd3d7fc4a5cdb8
 - name: github.com/pkg/errors
   version: 645ef00459ed84a119197bfb8d8205042c6df63d
+- name: github.com/stretchr/testify
+  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
+  subpackages:
+  - assert
+  - require
 - name: github.com/syndtr/goleveldb
   version: 6b4daa5362b502898ddf367c5c11deb9e7a5c727
   subpackages:
@@ -146,8 +151,3 @@ testImports:
   version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
   - difflib
-- name: github.com/stretchr/testify
-  version: d797d25e0fa6d53be3b1a216d24e868d6a1912ef
-  subpackages:
-  - assert
-  - require

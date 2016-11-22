@@ -2,3 +2,8 @@ package: github.com/ethanfrey/tenderize
 import:
 - package: github.com/tendermint/go-merkle
   repo: https://github.com/ethanfrey/go-merkle.git
+- package: github.com/stretchr/testify
+  version: ^1.1.4
+  subpackages:
+  - assert
+  - require

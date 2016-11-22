@@ -2,6 +2,7 @@ package mom
 
 import (
 	"bytes"
+	"math"
 
 	wutil "github.com/ethanfrey/tenderize/wire"
 	"github.com/tendermint/go-wire"
@@ -14,8 +15,8 @@ func init() {
 	maxAccountID = bytes.Repeat([]byte{255}, accountIDLength)
 	wire.RegisterInterface(
 		MWire{},
-		wire.ConcreteType{O: Account{}, Byte: 1},
-		wire.ConcreteType{O: Status{}, Byte: 2},
+		wire.ConcreteType{O: &Account{}, Byte: 2},
+		wire.ConcreteType{O: &Status{}, Byte: 4},
 	)
 }
 
@@ -42,7 +43,13 @@ func (a *Account) Serialize() ([]byte, error) {
 }
 
 func (a *Account) Deserialize(data []byte) error {
-	return wutil.FromBinary(data, MWire{a})
+	// There REALLY must be an easier way
+	holder := MWire{}
+	err := wutil.FromBinary(data, &holder)
+	if err == nil {
+		*a = *(holder.Model.(*Account))
+	}
+	return err
 }
 
 // AccountKey wraps the immutible ID
@@ -67,15 +74,15 @@ func (k AccountKey) Model() Model {
 
 // Status is the sample contained model (immutable - append only list)
 type Status struct {
-	AccountID []byte
-	Index     int32
-	Message   string
+	Account AccountKey
+	Index   int32
+	Message string
 }
 
 func (s *Status) Key() Key {
 	return StatusKey{
-		AccountID: s.AccountID,
-		Index:     s.Index,
+		Account: s.Account,
+		Index:   s.Index,
 	}
 }
 
@@ -84,12 +91,12 @@ func (s *Status) Serialize() ([]byte, error) {
 }
 
 func (s *Status) Deserialize(data []byte) error {
-	return wutil.FromBinary(data, MWire{s})
+	return wutil.FromBinary(data, &MWire{s})
 }
 
 type StatusKey struct {
-	AccountID []byte
-	Index     int32
+	Account AccountKey
+	Index   int32
 }
 
 func (k StatusKey) Serialize() ([]byte, error) {
@@ -97,14 +104,14 @@ func (k StatusKey) Serialize() ([]byte, error) {
 }
 
 func (k StatusKey) Range() (Key, Key) {
+	a1, a2 := k.Account.Range()
+
 	min, max := k, k
-	if k.AccountID == nil {
-		min.AccountID = minAccountID
-		max.AccountID = maxAccountID
-	}
+	min.Account, max.Account = a1.(AccountKey), a2.(AccountKey)
+
 	if k.Index == 0 {
-		min.Index = 0
-		max.Index = 200000000 // TODO: maxint constant?
+		min.Index = 1
+		max.Index = math.MaxInt32
 	}
 	return min, max
 }
