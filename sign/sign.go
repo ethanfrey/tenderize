@@ -8,30 +8,49 @@ import (
 )
 
 func init() {
+	registerGoCryptoGoWire()
+}
+
+func registerGoCryptoGoWire() {
 	// we must register these types here, to make sure they parse (maybe go-wire issue??)
 	wire.RegisterInterface(
 		struct{ crypto.PubKey }{},
-		wire.ConcreteType{crypto.PubKeyEd25519{}, crypto.PubKeyTypeEd25519},
-		wire.ConcreteType{crypto.PubKeySecp256k1{}, crypto.PubKeyTypeSecp256k1},
+		wire.ConcreteType{O: crypto.PubKeyEd25519{}, Byte: crypto.PubKeyTypeEd25519},
+		wire.ConcreteType{O: crypto.PubKeySecp256k1{}, Byte: crypto.PubKeyTypeSecp256k1},
 	)
 	wire.RegisterInterface(
 		struct{ crypto.Signature }{},
-		wire.ConcreteType{crypto.SignatureEd25519{}, crypto.SignatureTypeEd25519},
-		wire.ConcreteType{crypto.SignatureSecp256k1{}, crypto.SignatureTypeSecp256k1},
+		wire.ConcreteType{O: crypto.SignatureEd25519{}, Byte: crypto.SignatureTypeEd25519},
+		wire.ConcreteType{O: crypto.SignatureSecp256k1{}, Byte: crypto.SignatureTypeSecp256k1},
 	)
 }
 
-type Signed interface {
-	GetSigner() crypto.PubKey
-	IsAnon() bool
-	GetActionData() []byte
-	Validate() (ValidatedAction, error)
-	Serialize() ([]byte, error)
+// Action tries to limit the types we support to desired ones
+type Action interface {
+	IsAction() error
 }
 
-type Validated interface {
-	Signed
-	GetAction() Action
+// actionWrapper is needed by go-wire to handle the interface
+type actionWrapper struct {
+	Action
+}
+
+// RegisterActions takes a list of all Actions we support and registers them with go-wire for Serialization
+// The control byte is based on the order, so if you want to maintain compatibility with an
+// existing data store, do not change the position of any items.  You can use nil as a
+// placeholder to not use that byte anymore.
+func RegisterActions(actions ...Action) {
+	// prepare for max size, but might be shorter with nil
+	regActs := make([]wire.ConcreteType, 0, len(actions))
+
+	for i, action := range actions {
+		// add the model and key for all non-nil values
+		if action != nil {
+			regActs = append(regActs, wire.ConcreteType{O: action, Byte: byte(i + 1)})
+		}
+	}
+	// now register this with go-wire
+	wire.RegisterInterface(actionWrapper{}, regActs...)
 }
 
 // ValidatedAction is returned after properly parsing a SignedAction and validating the signature
@@ -41,6 +60,7 @@ type ValidatedAction struct {
 	SignedAction
 }
 
+// GetAction returns the action which was validated
 func (v ValidatedAction) GetAction() Action {
 	return v.action
 }
