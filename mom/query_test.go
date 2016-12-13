@@ -1,7 +1,6 @@
 package mom
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -13,6 +12,16 @@ func checkQueryCount(t *testing.T, tree merkle.Tree, query Query, expected int) 
 	accts, err := List(tree, query)
 	require.Nil(t, err)
 	assert.Equal(t, expected, len(accts))
+}
+
+func checkQueryResults(t *testing.T, tree merkle.Tree, query Query, expected ...Model) {
+	accts, err := List(tree, query)
+	require.Nil(t, err)
+	if assert.Equal(t, len(expected), len(accts)) {
+		for i := range expected {
+			assert.EqualValues(t, expected[i], accts[i], "Position %d", i)
+		}
+	}
 }
 
 func checkLoad(t *testing.T, tree merkle.Tree, key Key, expected Model) {
@@ -115,9 +124,8 @@ func TestSaveLoadStatus(t *testing.T) {
 	foo, bar := allStatus.Key.Range()
 	a, b := allAccts.Key.Range()
 	for _, k := range []Key{allAccts.Key, a, b, allStatus.Key, olgaStatus.Key, foo, bar} {
-		s, err := KeyToBytes(k)
+		_, err := KeyToBytes(k)
 		require.Nil(t, err)
-		fmt.Println(s)
 	}
 
 	checkQueryCount(t, tree, allAccts, 2)
@@ -149,5 +157,52 @@ func TestSaveLoadStatus(t *testing.T) {
 }
 
 func TestQueryFilters(t *testing.T) {
+	tree := merkle.NewIAVLTree(0, nil) // in-memory
+
+	// make three accounts for query
+	jan := Account{
+		ID:   []byte("1234567890123456"),
+		Name: "Jan",
+		Age:  16,
+	}
+	wilhelm := Account{
+		ID:   []byte("6sdfghjkiuytrewq"),
+		Name: "Wilhelm",
+		Age:  123,
+	}
+	katarina := Account{
+		ID:   []byte("4poi5poi6poi7poi"),
+		Name: "Katarina",
+		Age:  34,
+	}
+	checkSave(t, tree, jan, 1)
+	checkSave(t, tree, wilhelm, 2)
+	checkSave(t, tree, katarina, 3)
+
+	// full table scan for age
+	older := Query{
+		Key: AccountKey{},
+		Filter: func(m Model) bool {
+			acct, ok := m.(Account)
+			return ok && acct.Age > 29
+		},
+	}
+
+	// full table scan for name
+	alpha := Query{
+		Key:     AccountKey{},
+		Reverse: true,
+		Filter: func(m Model) bool {
+			acct, ok := m.(Account)
+			return ok && acct.Name < "No"
+		},
+	}
+
+	// make sure proper count....
+	checkQueryCount(t, tree, older, 2)
+	checkQueryResults(t, tree, older, katarina, wilhelm) // in order of ID
+
+	checkQueryCount(t, tree, alpha, 2)
+	checkQueryResults(t, tree, alpha, katarina, jan) // in reverse order of ID
 
 }
