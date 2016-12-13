@@ -1,20 +1,19 @@
 package mom
 
-import "github.com/tendermint/go-merkle"
+import (
+	wutil "github.com/ethanfrey/tenderize/wire"
+	"github.com/tendermint/go-merkle"
+)
 
 // Key is designed to let you easily build compound indexes using the one database key
 type Key interface {
-	// Serialize returns the Key as a byte array for use in go-merkle
-	// Returns an error if some required fields are not set
-	Serialize() ([]byte, error)
-
 	// Range assumes the key has one or more elements at the zero (nil) value
 	// It should return two keys, the first is with those zero elements set the the minimum possible value
 	// The second return value should be with the zero elements set to their maximum possible value
 	Range() (min Key, max Key)
 
 	// Model returns one instance of the backing model for this key, for use in loading data
-	Model() Model
+	// Model() Model
 }
 
 // MKey is designed to bridge Keys for go-wire
@@ -29,11 +28,17 @@ type Query struct {
 	Filter  func(Model) bool
 }
 
+// KeyToBytes returns the Key as a byte array for use in go-merkle
+// Returns an error if some required fields are not set
+func KeyToBytes(key Key) ([]byte, error) {
+	return wutil.ToBinary(MKey{key})
+}
+
 // Load attempts to find the data matching the given key
 // If the key or store data cannot be parsed, returns error
 // If there is no data, Model is nil
 func Load(store merkle.Tree, key Key) (Model, error) {
-	k, err := key.Serialize()
+	k, err := KeyToBytes(key)
 	if err != nil {
 		return nil, err
 	}
@@ -43,19 +48,17 @@ func Load(store merkle.Tree, key Key) (Model, error) {
 		return nil, nil
 	}
 
-	model := key.Model()
-	err = model.Deserialize(data)
-	return model, err
+	return ModelFromBytes(data)
 }
 
 // ByteRange attempts to take the range and serialize it, returns error if either fails
 func ByteRange(key Key) (start []byte, end []byte, err error) {
 	s, e := key.Range()
-	start, err = s.Serialize()
+	start, err = KeyToBytes(s)
 	if err != nil {
 		return
 	}
-	end, err = e.Serialize()
+	end, err = KeyToBytes(e)
 	return
 }
 
@@ -74,8 +77,7 @@ func filter(store merkle.Tree, key Key, ascending bool, filter func(Model) bool)
 	}
 
 	store.IterateRange(start, end, ascending, func(k []byte, v []byte) bool {
-		item := key.Model()
-		err := item.Deserialize(v)
+		item, err := ModelFromBytes(v)
 		if err == nil && (filter == nil || filter(item)) {
 			res = append(res, item)
 		}

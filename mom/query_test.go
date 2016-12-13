@@ -115,7 +115,7 @@ func TestSaveLoadStatus(t *testing.T) {
 	foo, bar := allStatus.Key.Range()
 	a, b := allAccts.Key.Range()
 	for _, k := range []Key{allAccts.Key, a, b, allStatus.Key, olgaStatus.Key, foo, bar} {
-		s, err := k.Serialize()
+		s, err := KeyToBytes(k)
 		require.Nil(t, err)
 		fmt.Println(s)
 	}

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"math"
 
-	wutil "github.com/ethanfrey/tenderize/wire"
 	"github.com/tendermint/go-wire"
 )
 
@@ -39,31 +38,13 @@ type Account struct {
 	Status string
 }
 
-func (a *Account) Key() Key {
-	return AccountKey{ID: a.ID}
-}
-
-func (a *Account) Serialize() ([]byte, error) {
-	return wutil.ToBinary(MWire{a})
-}
-
-func (a *Account) Deserialize(data []byte) error {
-	// There REALLY must be an easier way
-	holder := MWire{}
-	err := wutil.FromBinary(data, &holder)
-	if err == nil {
-		*a = *(holder.Model.(*Account))
-	}
-	return err
-}
-
 // AccountKey wraps the immutible ID
 type AccountKey struct {
 	ID []byte
 }
 
-func (k AccountKey) Serialize() ([]byte, error) {
-	return wutil.ToBinary(MKey{k})
+func (a *Account) Key() Key {
+	return AccountKey{ID: a.ID}
 }
 
 func (k AccountKey) Range() (min Key, max Key) {
@@ -73,10 +54,6 @@ func (k AccountKey) Range() (min Key, max Key) {
 	return AccountKey{ID: minAccountID}, AccountKey{ID: maxAccountID}
 }
 
-func (k AccountKey) Model() Model {
-	return new(Account)
-}
-
 // Status is the sample contained model (immutable - append only list)
 type Status struct {
 	Account Key
@@ -84,28 +61,16 @@ type Status struct {
 	Message string
 }
 
-func (s *Status) Key() Key {
-	return StatusKey{
-		Account: s.Account,
-		Index:   s.Index,
-	}
-}
-
-func (s *Status) Serialize() ([]byte, error) {
-	return wutil.ToBinary(MWire{s})
-}
-
-func (s *Status) Deserialize(data []byte) error {
-	return wutil.FromBinary(data, &MWire{s})
-}
-
 type StatusKey struct {
 	Account Key
 	Index   int32
 }
 
-func (k StatusKey) Serialize() ([]byte, error) {
-	return wutil.ToBinary(MKey{k})
+func (s *Status) Key() Key {
+	return StatusKey{
+		Account: s.Account,
+		Index:   s.Index,
+	}
 }
 
 func (k StatusKey) Range() (Key, Key) {
@@ -117,8 +82,4 @@ func (k StatusKey) Range() (Key, Key) {
 		max.Index = math.MaxInt32
 	}
 	return min, max
-}
-
-func (k StatusKey) Model() Model {
-	return new(Status)
 }
