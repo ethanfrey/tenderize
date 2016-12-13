@@ -3,31 +3,19 @@ package mom
 import (
 	"bytes"
 	"math"
-
-	"github.com/tendermint/go-wire"
 )
 
 // This file demonstrates how an application can construct there models to use this package properly
 
 func init() {
-	minAccountID = bytes.Repeat([]byte{0}, accountIDLength)
-	maxAccountID = bytes.Repeat([]byte{255}, accountIDLength)
-	wire.RegisterInterface(
-		MWire{},
-		wire.ConcreteType{O: Account{}, Byte: 1},
-		wire.ConcreteType{O: Status{}, Byte: 2},
-	)
-	wire.RegisterInterface(
-		MKey{},
-		wire.ConcreteType{O: AccountKey{}, Byte: 1},
-		wire.ConcreteType{O: StatusKey{}, Byte: 2},
-	)
+	// IMPORTANT: you must call this in the init, so all serialization works
+	RegisterModels(Account{}, Status{})
 }
 
 var (
 	accountIDLength = 16
-	minAccountID    []byte
-	maxAccountID    []byte
+	minAccountID    = bytes.Repeat([]byte{0}, accountIDLength)
+	maxAccountID    = bytes.Repeat([]byte{255}, accountIDLength)
 )
 
 // Account is the sample main model

@@ -11,13 +11,10 @@ type Key interface {
 	// It should return two keys, the first is with those zero elements set the the minimum possible value
 	// The second return value should be with the zero elements set to their maximum possible value
 	Range() (min Key, max Key)
-
-	// Model returns one instance of the backing model for this key, for use in loading data
-	// Model() Model
 }
 
-// MKey is designed to bridge Keys for go-wire
-type MKey struct {
+// mkey is designed to bridge Keys for go-wire
+type mkey struct {
 	Key
 }
 
@@ -31,7 +28,7 @@ type Query struct {
 // KeyToBytes returns the Key as a byte array for use in go-merkle
 // Returns an error if some required fields are not set
 func KeyToBytes(key Key) ([]byte, error) {
-	return wutil.ToBinary(MKey{key})
+	return wutil.ToBinary(mkey{key})
 }
 
 // Load attempts to find the data matching the given key
