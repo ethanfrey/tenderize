@@ -29,12 +29,12 @@ func checkSave(t *testing.T, tree merkle.Tree, model Model, size int) {
 
 func TestSaveLoadAccount(t *testing.T) {
 	tree := merkle.NewIAVLTree(0, nil) // in-memory
-	jorge := &Account{
+	jorge := Account{
 		ID:   []byte("0123456789abcdef"),
 		Name: "Jorge",
 		Age:  45,
 	}
-	maria := &Account{
+	maria := Account{
 		ID:   []byte("42424242deadbeef"),
 		Name: "Maria",
 		Age:  37,
@@ -96,12 +96,12 @@ func TestSaveLoadStatus(t *testing.T) {
 	tree := merkle.NewIAVLTree(0, nil) // in-memory
 
 	// we have two accounts for status...
-	olga := &Account{
+	olga := Account{
 		ID:   []byte("5432765454327654"),
 		Name: "Olga",
 		Age:  31,
 	}
-	vlad := &Account{
+	vlad := Account{
 		ID:   []byte("98798700asdfghjk"),
 		Name: "Vladimir",
 		Age:  28,
@@ -124,17 +124,17 @@ func TestSaveLoadStatus(t *testing.T) {
 	checkQueryCount(t, tree, allStatus, 0)
 	checkQueryCount(t, tree, olgaStatus, 0)
 
-	os1 := &Status{
+	os1 := Status{
 		Account: olga.Key(),
 		Index:   1,
 		Message: "Happy",
 	}
-	os2 := &Status{
+	os2 := Status{
 		Account: olga.Key(),
 		Index:   2,
 		Message: "Sad",
 	}
-	vs1 := &Status{
+	vs1 := Status{
 		Account: vlad.Key(),
 		Index:   1,
 		Message: "Say What?",

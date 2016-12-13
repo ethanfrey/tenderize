@@ -14,8 +14,8 @@ func init() {
 	maxAccountID = bytes.Repeat([]byte{255}, accountIDLength)
 	wire.RegisterInterface(
 		MWire{},
-		wire.ConcreteType{O: &Account{}, Byte: 1},
-		wire.ConcreteType{O: &Status{}, Byte: 2},
+		wire.ConcreteType{O: Account{}, Byte: 1},
+		wire.ConcreteType{O: Status{}, Byte: 2},
 	)
 	wire.RegisterInterface(
 		MKey{},
@@ -43,14 +43,15 @@ type AccountKey struct {
 	ID []byte
 }
 
-func (a *Account) Key() Key {
+func (a Account) Key() Key {
 	return AccountKey{ID: a.ID}
 }
 
 func (k AccountKey) Range() (min Key, max Key) {
-	if k.ID != nil {
+	if len(k.ID) == accountIDLength {
 		return k, k
 	}
+	// TODO: if len > 0 but < 16, then use the prefix and fill the rest with 0 or 255 for min, max
 	return AccountKey{ID: minAccountID}, AccountKey{ID: maxAccountID}
 }
 
@@ -66,7 +67,7 @@ type StatusKey struct {
 	Index   int32
 }
 
-func (s *Status) Key() Key {
+func (s Status) Key() Key {
 	return StatusKey{
 		Account: s.Account,
 		Index:   s.Index,
@@ -74,6 +75,7 @@ func (s *Status) Key() Key {
 }
 
 func (k StatusKey) Range() (Key, Key) {
+	// TODO: make this a bit cleaner?
 	min, max := k, k
 	min.Account, max.Account = k.Account.Range()
 
