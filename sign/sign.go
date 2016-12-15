@@ -11,8 +11,9 @@ func init() {
 	registerGoCryptoGoWire()
 }
 
+// we must register these types here, to make sure they parse (maybe go-wire issue??)
+// TODO: fix go-wire, remove this code
 func registerGoCryptoGoWire() {
-	// we must register these types here, to make sure they parse (maybe go-wire issue??)
 	wire.RegisterInterface(
 		struct{ crypto.PubKey }{},
 		wire.ConcreteType{O: crypto.PubKeyEd25519{}, Byte: crypto.PubKeyTypeEd25519},
@@ -33,6 +34,20 @@ type Action interface {
 // actionWrapper is needed by go-wire to handle the interface
 type actionWrapper struct {
 	Action
+}
+
+// ActionToBytes converts the action into bytes to store in the db
+// If there are invalid values in the action you can return an error
+func ActionToBytes(action Action) ([]byte, error) {
+	return wutil.ToBinary(actionWrapper{action})
+}
+
+// ActionFromBytes sets the action contents to the passed in data
+// Returns error if the data doesn't match this action
+func ActionFromBytes(data []byte) (Action, error) {
+	holder := actionWrapper{}
+	err := wutil.FromBinary(data, &holder)
+	return holder.Action, err
 }
 
 // RegisterActions takes a list of all Actions we support and registers them with go-wire for Serialization
@@ -65,6 +80,7 @@ func (v ValidatedAction) GetAction() Action {
 	return v.action
 }
 
+// GetSigner returns the public key that signed the action, or nil if unvalidated
 func (v ValidatedAction) GetSigner() crypto.PubKey {
 	if !v.valid {
 		return nil
@@ -72,6 +88,7 @@ func (v ValidatedAction) GetSigner() crypto.PubKey {
 	return v.SignedAction.GetSigner()
 }
 
+// IsAnon returns false iff it was properly validated
 func (v ValidatedAction) IsAnon() bool {
 	return v.GetSigner() == nil
 }
@@ -107,27 +124,25 @@ func (tx *SignedAction) Deserialize(data []byte) error {
 
 // Validate will deserialize the contained action, and validate the signature or return an error
 func (tx SignedAction) Validate() (ValidatedAction, error) {
-	action := ValidatedAction{
+	res := ValidatedAction{
 		SignedAction: tx,
 	}
 	valid := tx.Signer.VerifyBytes(tx.ActionData, tx.Signature)
 	if !valid {
-		return action, errors.New("Invalid signature")
+		return res, errors.New("Invalid signature")
 	}
 
-	wrap := actionWrapper{}
-	err := wutil.FromBinary(tx.ActionData, &wrap)
-	if err != nil {
-		return action, err
+	var err error
+	res.action, err = ActionFromBytes(tx.ActionData)
+	if err == nil {
+		res.valid = true
 	}
-	action.action = wrap.Action
-	action.valid = true
-	return action, nil
+	return res, err
 }
 
 // SignAction will serialize the action and sign it with your key
 func SignAction(action Action, privKey crypto.PrivKey) (res SignedAction, err error) {
-	res.ActionData, err = wutil.ToBinary(actionWrapper{action})
+	res.ActionData, err = ActionToBytes(action)
 	if err != nil {
 		return res, err
 	}
