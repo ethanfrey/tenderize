@@ -1,5 +1,5 @@
-hash: 35363e9b3847d0bea6bbf3ca402b7ef9ceda546d541d84ece6b12cf42411469d
-updated: 2016-11-22T17:39:49.775142856+01:00
+hash: 31e624cbda7f2c94b92af6c39094dfd686011ac4a1b59ef22be2eeb7b16c2acd
+updated: 2016-12-15T19:47:11.130048227+01:00
 imports:
 - name: github.com/btcsuite/btcd
   version: 83432785f3df1f0b6f8e6926dfe0987a34ea5b3c
@@ -144,10 +144,10 @@ imports:
   - transport
 testImports:
 - name: github.com/davecgh/go-spew
-  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
+  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
   subpackages:
   - spew
 - name: github.com/pmezard/go-difflib
-  version: 792786c7400a136282c1664665ae0a8db921c6c2
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
   - difflib
